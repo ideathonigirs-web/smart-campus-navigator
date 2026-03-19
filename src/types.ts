@@ -65,6 +65,7 @@ export interface Student {
   department_id?: number;
   year: number;
   section: string;
+  attendance_percentage?: number;
 }
 
 export interface Course {

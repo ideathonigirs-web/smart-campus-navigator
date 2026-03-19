@@ -44,7 +44,6 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout, isOpe
       { id: 'departments', label: 'Infrastructure', icon: Building2 },
       { id: 'campus', label: 'Campus Map', icon: MapPin },
     ] : user.role === 'visitor' ? [
-      { id: 'announcements', label: 'Announcements', icon: Bell },
       { id: 'campus', label: 'Campus Map', icon: MapPin },
       { id: 'ai', label: 'Smart Campus AI', icon: Sparkles },
     ] : [

@@ -168,10 +168,9 @@ export default function Dashboard({ user, activeTab, onUserUpdate }: DashboardPr
         department_id: selectedFilter.department_id.toString()
       });
 
-      const [deptsRes, timetableRes, studentsRes, classroomsRes, blocksRes, attendanceRes, coursesRes, facultyRes, announcementsRes] = await Promise.all([
+      const [deptsRes, timetableRes, classroomsRes, blocksRes, attendanceRes, coursesRes, facultyRes, announcementsRes] = await Promise.all([
         fetch('/api/departments'),
         fetch(`/api/timetable/${user.role}/${user.id}?${queryParams}`),
-        fetch(`/api/students?${queryParams}`),
         fetch('/api/classrooms'),
         fetch('/api/blocks'),
         fetch(`/api/stats/attendance?role=${user.role}${user.role === 'student' ? `&studentId=${user.id}` : ''}`),
@@ -182,7 +181,6 @@ export default function Dashboard({ user, activeTab, onUserUpdate }: DashboardPr
 
       setDepartments(await deptsRes.json());
       setTimetable(await timetableRes.json());
-      setStudents(await studentsRes.json());
       setClassrooms(await classroomsRes.json());
       setBlocks(await blocksRes.json());
       setAttendanceStats(await attendanceRes.json());
@@ -199,6 +197,25 @@ export default function Dashboard({ user, activeTab, onUserUpdate }: DashboardPr
   useEffect(() => {
     fetchData();
   }, [user, selectedFilter]);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const queryParams = new URLSearchParams({
+          year: studentFilter.year.toString(),
+          section: studentFilter.section,
+          department_id: studentFilter.department_id.toString()
+        });
+        const res = await fetch(`/api/students?${queryParams}`);
+        setStudents(await res.json());
+      } catch (err) {
+        console.error('Failed to fetch students', err);
+      }
+    };
+    if (user.role === 'faculty' || user.role === 'dept_admin') {
+      fetchStudents();
+    }
+  }, [studentFilter, user.role]);
 
   useEffect(() => {
     setSettingsData({ name: user.name, email: user.email });
@@ -788,7 +805,7 @@ export default function Dashboard({ user, activeTab, onUserUpdate }: DashboardPr
   }
 
   const renderDashboard = () => {
-    const stats = user.role === 'faculty' ? [
+    const stats = (user.role === 'faculty' || user.role === 'dept_admin') ? [
       { label: 'Total Students', value: students.length, icon: Users, color: 'bg-blue-500' },
       { label: 'Departments', value: departments.length, icon: Building2, color: 'bg-indigo-500' },
       { label: 'Classes Today', value: timetable.length, icon: Calendar, color: 'bg-emerald-500' },
@@ -1126,20 +1143,20 @@ export default function Dashboard({ user, activeTab, onUserUpdate }: DashboardPr
   );
 
   const renderStudents = () => {
-    if (user.role !== 'faculty') {
+    if (user.role !== 'faculty' && user.role !== 'dept_admin') {
       return (
         <div className="flex flex-col items-center justify-center h-[60vh] text-center">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
             <X className="w-8 h-8 text-red-500" />
           </div>
           <h2 className="text-xl font-bold text-slate-900">Access Denied</h2>
-          <p className="text-slate-500 mt-2">Only faculty members can access the student directory.</p>
+          <p className="text-slate-500 mt-2">Only faculty members and admins can access the student directory.</p>
         </div>
       );
     }
 
     const filteredStudents = students.filter(student => {
-      const deptMatch = studentFilter.department_id === 0 || departments.find(d => d.name === student.department_name)?.id === studentFilter.department_id;
+      const deptMatch = studentFilter.department_id === 0 || student.department_id === studentFilter.department_id;
       const yearMatch = studentFilter.year === 0 || student.year === studentFilter.year;
       const sectionMatch = studentFilter.section === 'All' || student.section === studentFilter.section;
       const searchMatch = studentSearch === '' || 
@@ -1250,9 +1267,20 @@ export default function Dashboard({ user, activeTab, onUserUpdate }: DashboardPr
                   </td>
                   <td className="p-4">
                     <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '85%' }}></div>
+                      <div 
+                        className={`h-full rounded-full ${
+                          (student.attendance_percentage || 0) >= 75 ? 'bg-emerald-500' : 
+                          (student.attendance_percentage || 0) >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                        }`} 
+                        style={{ width: `${student.attendance_percentage || 0}%` }}
+                      ></div>
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-600 mt-1 block">85% Present</span>
+                    <span className={`text-[10px] font-bold mt-1 block ${
+                      (student.attendance_percentage || 0) >= 75 ? 'text-emerald-600' : 
+                      (student.attendance_percentage || 0) >= 60 ? 'text-amber-600' : 'text-red-600'
+                    }`}>
+                      {student.attendance_percentage || 0}% Present
+                    </span>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
@@ -1979,8 +2007,10 @@ export default function Dashboard({ user, activeTab, onUserUpdate }: DashboardPr
     }
   };
 
-  const renderAnnouncements = () => (
-    <div className="space-y-8">
+  const renderAnnouncements = () => {
+    if (user.role === 'visitor') return null;
+    return (
+      <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Campus Announcements</h1>
@@ -2053,7 +2083,8 @@ export default function Dashboard({ user, activeTab, onUserUpdate }: DashboardPr
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   const renderAdminTools = () => (
     <div className="space-y-8">
