@@ -1,43 +1,43 @@
-export type UserRole = 'student' | 'faculty' | 'dept_admin' | 'visitor';
+export type UserRole = 'student' | 'faculty' | 'dept_admin' | 'visitor' | 'admin';
 
 export interface User {
-  id: number;
+  id: string; // number-la irundhu string-ku maathiyaachu
   email: string;
   role: UserRole;
   name: string;
-  department_id: number;
+  department_id: string; // Idhaiyum string-aa maathuvathu best
   department_name?: string;
   year?: number;
   section?: string;
 }
 
 export interface Department {
-  id: number;
+  id: string;
   name: string;
   location: string;
   image_url?: string;
 }
 
 export interface Block {
-  id: number;
+  id: string;
   name: string;
   type: string;
   image_url?: string;
 }
 
 export interface Classroom {
-  id: number;
-  block_id: number;
+  id: string;
+  block_id: string;
   name: string;
   capacity: number;
   block_name?: string;
 }
 
 export interface TimetableEntry {
-  id: number;
-  department_id: number;
-  faculty_id: number;
-  classroom_id: number;
+  id: string;
+  department_id: string;
+  faculty_id: string;
+  classroom_id: string;
   day: string;
   start_time: string;
   end_time: string;
@@ -49,35 +49,35 @@ export interface TimetableEntry {
 }
 
 export interface AttendanceRecord {
-  id: number;
-  student_id: number;
-  timetable_id: number;
+  id: string;
+  student_id: string;
+  timetable_id: string;
   date: string;
   status: 'present' | 'absent';
   subject?: string;
 }
 
 export interface Student {
-  id: number;
+  id: string;
   name: string;
   email: string;
   department_name: string;
-  department_id?: number;
+  department_id?: string;
   year: number;
   section: string;
   attendance_percentage?: number;
 }
 
 export interface Course {
-  id: number;
+  id: string;
   code: string;
   name: string;
-  department_id: number;
+  department_id: string;
   credits: number;
 }
 
 export interface Faculty {
-  id: number;
+  id: string;
   name: string;
   email: string;
   department_name: string;
@@ -86,10 +86,10 @@ export interface Faculty {
 }
 
 export interface Announcement {
-  id: number;
+  id: string;
   title: string;
   content: string;
-  author_id: number;
+  author_id: string;
   author_name: string;
   author_role: UserRole;
   created_at: string;

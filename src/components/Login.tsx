@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { GraduationCap, Lock, Mail, Loader2, Eye, EyeOff } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion'; 
 // Firebase SDK imports
 import { auth, db } from '../firebase'; 
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -29,34 +29,32 @@ export default function Login({ onLogin }: LoginProps) {
       const fbUser = userCredential.user;
 
       // 2. Login aana udane Firestore-la irundhu user details edukkurom
-      const userDocRef = doc(db, "users", fbUser.uid);
+      // FIX: Neenga Firestore-la email-aiye document ID-aa kuduthurukkeenga
+      const userDocRef = doc(db, "users", email.toLowerCase().trim());
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
         
         // Success: Parent component-ku data anupuroam
+        // types.ts-la 'id' string-aa iruppadhala inge error varaadhu
         onLogin({
-          id: fbUser.uid,
+          id: fbUser.uid, // Firebase UID is a string
           name: userData.name || fbUser.email?.split('@')[0],
           email: fbUser.email!,
           role: userData.role || 'student', 
-          department_id: userData.department_id || 1,
+          department_id: userData.department_id || '1', // String-aa anupuvom
           department_name: userData.department_name || 'General'
-        } as any);
+        } as User); // Proper casting
       } else {
-        // Oru velai Auth-la email irundhu, Firestore-la data illai na indha error varum
         setError("User record not found in Firestore database.");
       }
     } catch (err: any) {
       console.error("Login Error:", err.code);
-      // Specific error messages for the user
-      if (err.code === 'auth/wrong-password') {
-        setError('Incorrect password. Please try again.');
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError('Invalid credentials. Check your email and password.');
       } else if (err.code === 'auth/user-not-found') {
         setError('No account found with this email.');
-      } else if (err.code === 'auth/invalid-credential') {
-        setError('Invalid credentials. Check your email and password.');
       } else {
         setError('Login failed. Please check your internet connection.');
       }
@@ -67,13 +65,13 @@ export default function Login({ onLogin }: LoginProps) {
 
   const handleVisitorLogin = () => {
     onLogin({
-      id: '999',
+      id: '999', // Quotation ulla kudukka vendum (string)
       name: 'Guest Visitor',
       email: 'visitor@campus.edu',
       role: 'visitor',
-      department_id: 1,
+      department_id: '1',
       department_name: 'General'
-    });
+    } as User);
   };
 
   return (
